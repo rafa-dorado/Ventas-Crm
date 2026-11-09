@@ -1,0 +1,6 @@
+{
+  "name": "Eonesia CRM - Ventas EdTech Inmersivo",
+  "description": "CRM de ventas de Eonesia para espacios educativos inmersivos en navegador con tablero Kanban, encaje de cliente ideal (ICP), analítica avanzada y gamificación.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

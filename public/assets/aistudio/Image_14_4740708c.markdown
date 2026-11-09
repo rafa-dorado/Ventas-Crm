@@ -1,0 +1,198 @@
+---
+name: Noetic Luminescence
+colors:
+  surface: '#13131a'
+  surface-dim: '#13131a'
+  surface-bright: '#393840'
+  surface-container-lowest: '#0e0e15'
+  surface-container-low: '#1b1b22'
+  surface-container: '#1f1f26'
+  surface-container-high: '#2a2931'
+  surface-container-highest: '#34343c'
+  on-surface: '#e4e1ec'
+  on-surface-variant: '#bcc8d0'
+  inverse-surface: '#e4e1ec'
+  inverse-on-surface: '#303038'
+  outline: '#86939a'
+  outline-variant: '#3c484f'
+  surface-tint: '#68d3ff'
+  primary: '#99deff'
+  on-primary: '#003546'
+  primary-container: '#00c8ff'
+  on-primary-container: '#005068'
+  inverse-primary: '#006684'
+  secondary: '#ffb0c8'
+  on-secondary: '#650034'
+  secondary-container: '#86194b'
+  on-secondary-container: '#ff95b9'
+  tertiary: '#dcceff'
+  on-tertiary: '#3a0092'
+  tertiary-container: '#c3adff'
+  on-tertiary-container: '#5521be'
+  error: '#ffb4ab'
+  on-error: '#690005'
+  error-container: '#93000a'
+  on-error-container: '#ffdad6'
+  primary-fixed: '#bee9ff'
+  primary-fixed-dim: '#68d3ff'
+  on-primary-fixed: '#001f2a'
+  on-primary-fixed-variant: '#004d64'
+  secondary-fixed: '#ffd9e2'
+  secondary-fixed-dim: '#ffb0c8'
+  on-secondary-fixed: '#3e001e'
+  on-secondary-fixed-variant: '#86194b'
+  tertiary-fixed: '#e9ddff'
+  tertiary-fixed-dim: '#cfbdff'
+  on-tertiary-fixed: '#22005d'
+  on-tertiary-fixed-variant: '#521cbb'
+  background: '#13131a'
+  on-background: '#e4e1ec'
+  surface-variant: '#34343c'
+typography:
+  headline-xl:
+    fontFamily: Sora
+    fontSize: 48px
+    fontWeight: '700'
+    lineHeight: 56px
+  headline-xl-mobile:
+    fontFamily: Sora
+    fontSize: 32px
+    fontWeight: '700'
+    lineHeight: 40px
+  headline-lg:
+    fontFamily: Sora
+    fontSize: 36px
+    fontWeight: '600'
+    lineHeight: 44px
+  headline-lg-mobile:
+    fontFamily: Sora
+    fontSize: 26px
+    fontWeight: '600'
+    lineHeight: 34px
+  headline-md:
+    fontFamily: Sora
+    fontSize: 24px
+    fontWeight: '600'
+    lineHeight: 32px
+  headline-sm:
+    fontFamily: Sora
+    fontSize: 20px
+    fontWeight: '600'
+    lineHeight: 28px
+  body-lg:
+    fontFamily: Manrope
+    fontSize: 18px
+    fontWeight: '400'
+    lineHeight: 28px
+  body-md:
+    fontFamily: Manrope
+    fontSize: 15px
+    fontWeight: '400'
+    lineHeight: 24px
+  body-sm:
+    fontFamily: Manrope
+    fontSize: 13px
+    fontWeight: '400'
+    lineHeight: 20px
+  label-md:
+    fontFamily: Manrope
+    fontSize: 13px
+    fontWeight: '600'
+    lineHeight: 18px
+  label-sm:
+    fontFamily: Manrope
+    fontSize: 11px
+    fontWeight: '700'
+    lineHeight: 14px
+rounded:
+  sm: 0.25rem
+  DEFAULT: 0.5rem
+  md: 0.75rem
+  lg: 1rem
+  xl: 1.5rem
+  full: 9999px
+spacing:
+  gutter: 1.5rem
+  gutter-sm: 1rem
+  margin: 2rem
+  margin-sm: 1rem
+  space-xs: 0.25rem
+  space-sm: 0.5rem
+  space-md: 1rem
+  space-lg: 1.5rem
+  space-xl: 2.5rem
+---
+
+## Brand & Style
+
+This design system translates the philosophical progression from darkness to clarity into a calibrated interface for immersive education. The aesthetic draws on refined geometric minimalism heightened by atmospheric luminescent accents, establishing an intellectual sanctuary rather than an overstimulating arcade. 
+
+The visual style merges pitch-black canvas architecture with crisp, focused neon accents and subtle translucent surfaces. Interface elements manifest as crystalline artefacts emerging from obscurity. The tone is encouraging, cerebral, and serene: it eliminates toxic gamification patterns, false urgency, and frantic metrics in favor of personal mastery, intellectual momentum, and thoughtful discovery.
+
+## Colors
+
+The chromatic architecture establishes clear perceptual roles across deep contrast levels:
+
+- **Canvas & Void (`#000000`)**: The foundational black base represents unformed potential and deep spatial depth, treated with an ultra-subtle dark mineral texture.
+- **Card & Container Fill (`#0D0D14`)**: A near-black obsidian tone that delineates interactive grounds without breaking the immersion of the void.
+- **Primary Cyan (`#00C8FF`)**: The beacon of clarity. Used strictly for active navigation states, interactive links, primary data readouts, and focal boundaries.
+- **Secondary Pink (`#E96999`)**: The kinetic driver. Reserved for earned achievement, XP accumulation, badge framing, and conversion actions.
+- **Tertiary Deep Purple (`#4802B1`)**: The radiant threshold. Employed strictly as an ambient backdrop glow, gradient interpolation layer, or mask fill—never as standalone text.
+- **Brand Signature Gradient**: Linear progression through `linear-gradient(135deg, #00C8FF 0%, #E96999 52%, #4802B1 100%)`, utilized on celebratory elements, portal rims, and hero visual moments.
+- **Typography Levels**: Primary text manifests in `#F2F2F7` for crisp legibility, while supporting labels, meta-data, and deactivated states sit at `#9A9AB0`.
+
+## Typography
+
+Typographic scale balances geometric technological precision with balanced, humanistic rhythm. 
+
+Headlines harness the wide, architectural stance of the display font to deliver impact across numeric indicators, achievement headings, and major landmarks. Body and operational text rely on the clean, open counters of the body face to maintain effortless legibility against high-contrast pitch surfaces. Numerical telemetry and key metrics inherit headline styling to preserve visual prominence across dashboards.
+
+## Layout & Spacing
+
+The spatial architecture is built on a responsive 12-column grid system paired with strict 8px incremental spacing intervals.
+
+- **Desktop (1280px+)**: 12 columns, 24px gutters (`gutter`), 32px canvas margins (`margin`). Layout modules balance dense management tools with generous breathing space around 3D viewport canvas nodes.
+- **Tablet (768px - 1279px)**: 8 columns, 16px gutters, 24px canvas margins. Secondary metrics collapse into swipeable cards or stacked modules.
+- **Mobile (< 768px)**: 4 columns, 16px gutters (`gutter-sm`), 16px margins (`margin-sm`). Spatial controls convert to unified vertical rails; complex viewport tooling stacks beneath viewports.
+
+Empty space operates intentionally as negative matter, allowing neon borders and portal highlights to define UI boundaries without visual clutter.
+
+## Elevation & Depth
+
+Depth in this system avoids conventional heavy drop shadows, relying instead on luminescent edge borders, atmospheric back-glows, and calibrated light emanations:
+
+- **Level 0 (Void)**: `#000000` base with optional microscopic mineral dust noise (opacity 0.03).
+- **Level 1 (Substrate Cards)**: `#0D0D14` surface framed with a 1px solid stroke of `rgba(0, 200, 255, 0.20)`. No box shadow in resting states.
+- **Level 2 (Hover & Focus States)**: Surface remains `#0D0D14`, border stroke steps to `rgba(0, 200, 255, 0.45)`, backed by a diffused neon outer glow: `box-shadow: 0 0 20px -4px rgba(0, 200, 255, 0.25)`.
+- **Level 3 (Portals & Active Achievement)**: Floating overlays, portals, or active modals feature an internal gradient stroke (`#00C8FF` to `#E96999`) and an ambient underglow powered by the tertiary tone: `box-shadow: 0 8px 32px -4px rgba(72, 2, 177, 0.45), 0 0 16px 0 rgba(233, 105, 153, 0.20)`.
+
+## Shapes
+
+The geometric taxonomy reflects high-precision lenses and mathematical forms:
+
+- **Base Radius**: Standard containers, buttons, inputs, and standard modules adopt an 8px radius (`0.5rem`), scaling to 16px (`1rem`) on outer modular cards and 24px (`1.5rem`) on hero displays.
+- **Hexagonal Motifs**: Achievement badges, mastery ranks, and student glyphs feature regular clipped-corner hexagons (`polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)`).
+- **Circular Portals**: Avatars, connection nodes, and spatial telemetry gateways use complete circles (`rounded-full`) framed with delicate glowing orbital rims.
+
+## Components
+
+### Buttons
+- **Primary (Action / XP Claim)**: Vibrant `#E96999` background, solid `#0D0D14` typography (semibold), 8px radius. Hover triggers an expanding outer halo: `box-shadow: 0 0 16px rgba(233, 105, 153, 0.5)`.
+- **Secondary (Telemetry / Navigation)**: `#0D0D14` background, 1px border `rgba(0, 200, 255, 0.35)`, `#00C8FF` label. Hover intensifies border to 100% cyan opacity with soft ambient fill `rgba(0, 200, 255, 0.08)`.
+- **Ghost**: Transparent fill, `#9A9AB0` text, transitioning to `#F2F2F7` on interaction.
+
+### Cards & Modules
+Built on `#0D0D14` backing with the signature 1px `rgba(0, 200, 255, 0.2)` perimeter. Header rows inside cards feature fine horizontal dividers (`rgba(255, 255, 255, 0.06)`). Interactive cards smoothly elevate border luminescence upon hover.
+
+### Form Inputs & Selectors
+Deep `#05050A` internal fills with 1px `rgba(154, 154, 176, 0.2)` border. On focus, borders transition crisply to `#00C8FF` alongside a localized `0 0 10px rgba(0, 200, 255, 0.2)` edge luminescence. Text uses `#F2F2F7` with `#9A9AB0` placeholder cues.
+
+### Badges & Chips
+- **Status & Navigation Chips**: Pill-shaped or 8px rounded capsules with `#0D0D14` backgrounds, 1px border `rgba(0, 200, 255, 0.3)`, carrying tiny 6px circular indicator lights.
+- **Mastery Hexagons**: Custom CSS clip-path containers with outer radial halos of `#4802B1` and internal accent iconography in `#E96999`.
+
+### Selection Controls
+Checkboxes and radio elements retain strict geometric profiles. In active states, they illuminate with `#00C8FF` fills and dark void markers, avoiding heavy ornamentation.
+
+### Portals & 3D Viewport Frames
+Viewport containers feature circular or rounded geometric bezels with ambient boundary illumination fading from Cyan to Deep Purple, providing a subtle separation between dashboard controls and real-time interactive canvas zones.

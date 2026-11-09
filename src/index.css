@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   AQUÍ CAMBIAS EL ESTILO
+   Configuración de colores, fuentes, radios y sombras del CRM Eonesia
+   ========================================================================== */
+:root {
+  /* Colores del Sistema */
+  --color-fondo: #000000;
+  --color-tarjeta: #0D0D14;
+  --color-tarjeta-hover: #131320;
+  --color-tarjeta-alt: #161622;
+  --color-borde: rgba(0, 200, 255, 0.2);
+  --color-borde-hover: rgba(0, 200, 255, 0.45);
+  --color-borde-fino: rgba(255, 255, 255, 0.08);
+
+  /* Colores de Marca y Acento */
+  --color-cian: #00C8FF;             /* Color principal interactivo y focal */
+  --color-cian-dim: rgba(0, 200, 255, 0.15);
+  --color-rosa: #E96999;             /* Acento, XP, insignias y conversión */
+  --color-rosa-dim: rgba(233, 105, 153, 0.18);
+  --color-purpura: #4802B1;          /* Solo rellenos, resplandores o máscaras, NUNCA texto */
+  --color-purpura-glow: rgba(72, 2, 177, 0.4);
+
+  /* Degradado oficial */
+  --degradado-marca: linear-gradient(135deg, #00C8FF 0%, #E96999 52%, #4802B1 100%);
+  --degradado-sutil: linear-gradient(135deg, rgba(0, 200, 255, 0.12) 0%, rgba(233, 105, 153, 0.08) 52%, rgba(72, 2, 177, 0.15) 100%);
+
+  /* Tipografía y Texto */
+  --color-texto: #F2F2F7;
+  --color-texto-secundario: #B4B4C8;
+  --color-texto-apagado: #6B6B80;
+
+  --fuente-titulos: 'Ubuntu', sans-serif;
+  --fuente-cuerpo: 'Roboto', sans-serif;
+
+  /* Esquinas (8-12px) */
+  --radio-sm: 8px;
+  --radio-md: 10px;
+  --radio-lg: 12px;
+  --radio-full: 9999px;
+
+  /* Resplandores y Luces */
+  --resplandor-cian: 0 0 16px -2px rgba(0, 200, 255, 0.35);
+  --resplandor-rosa: 0 0 18px -2px rgba(233, 105, 153, 0.4);
+  --resplandor-portal: 0 8px 32px -4px rgba(72, 2, 177, 0.45), 0 0 16px 0 rgba(233, 105, 153, 0.2);
+}
+
+/* Base resets & typography */
+html, body {
+  background-color: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--fuente-cuerpo);
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: var(--fuente-titulos);
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #000000;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 200, 255, 0.2);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 200, 255, 0.4);
+}
+
+/* Hexagon clip path for mastery & levels */
+.clip-hexagon {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+}
+
+/* Focus styles */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-cian) !important;
+  box-shadow: 0 0 12px rgba(0, 200, 255, 0.25);
+}
+
+/* Animación de entrada suave para bloques dinámicos */
+@keyframes slideDownFade {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.anim-slide-down {
+  animation: slideDownFade 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
