@@ -551,6 +551,23 @@ Equipo Eonesia`;
                 </>
               )}
             </div>
+            {(centro.tier || centro.telefono || centro.emailGeneral) && (
+              <div className="flex flex-wrap items-center gap-2 text-[11px] text-[#B4B4C8] mt-1.5">
+                {centro.tier && (
+                  <span className="px-1.5 py-0.5 rounded bg-[rgba(0,200,255,0.12)] text-[#00C8FF] font-semibold border border-[rgba(0,200,255,0.3)]">
+                    Tier {centro.tier}{centro.fitScore !== undefined ? ` · fit ${centro.fitScore}` : ''}
+                  </span>
+                )}
+                {centro.municipio && <span>{centro.municipio}</span>}
+                {centro.telefono && (
+                  <a href={`tel:${centro.telefono}`} className="text-[#00C8FF] hover:underline">{centro.telefono}</a>
+                )}
+                {centro.emailGeneral && (
+                  <a href={`mailto:${centro.emailGeneral}`} className="text-[#00C8FF] hover:underline truncate">{centro.emailGeneral}</a>
+                )}
+                {centro.redPadre && <span>Red: {centro.redPadre}</span>}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
