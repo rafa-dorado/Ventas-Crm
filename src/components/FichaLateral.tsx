@@ -13,6 +13,7 @@ import {
   TipoCentro,
 } from '../types';
 import { crmRepo } from '../repo';
+import { doloresPorTipo, tipoSinAlumnos } from '../utils/crmHelpers';
 import {
   calcularEncajeICP,
   calcularProductoSugerido,
@@ -128,6 +129,15 @@ export const FichaLateral: React.FC<FichaLateralProps> = ({
   // Estados de edición rápida
   const [valorInput, setValorInput] = useState<string>('');
   const [dolorSeleccionado, setDolorSeleccionado] = useState<DolorPrincipal>('Otro');
+  // Edición de contactos
+  const [editCtId, setEditCtId] = useState<string | null>(null);
+  const [editCt, setEditCt] = useState<{ nombre: string; cargo: string; email: string; rol: RolContacto }>({
+    nombre: '',
+    cargo: '',
+    email: '',
+    rol: 'Decisor',
+  });
+  const [borrarCtId, setBorrarCtId] = useState<string | null>(null);
   const [productoElegido, setProductoElegido] = useState<string>('');
   const [proximoPasoAccion, setProximoPasoAccion] = useState<string>('');
   const [proximoPasoFecha, setProximoPasoFecha] = useState<string>('');
@@ -521,8 +531,12 @@ Equipo Eonesia`;
 
             <div className="flex items-center gap-3 text-xs text-[#B4B4C8] mt-1">
               <span>{centro.provincia}</span>
-              <span>·</span>
-              <span>{centro.alumnos} alumnos aprox.</span>
+              {!tipoSinAlumnos(centro.tipo) && centro.alumnos > 0 && (
+                <>
+                  <span>·</span>
+                  <span>{centro.alumnos} alumnos aprox.</span>
+                </>
+              )}
               {centro.web && (
                 <>
                   <span>·</span>
@@ -692,7 +706,7 @@ Equipo Eonesia`;
               {/* Dolor Principal */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-medium text-[#B4B4C8]">
-                  Dolor principal del centro
+                  Dolor principal
                 </label>
                 <select
                   value={dolorSeleccionado}
@@ -702,14 +716,11 @@ Equipo Eonesia`;
                   }}
                   className="w-full bg-[#05050A] border border-[rgba(154,154,176,0.3)] rounded-lg p-2.5 text-xs text-[#F2F2F7]"
                 >
-                  <option value="Abandono del alumnado">Abandono del alumnado</option>
-                  <option value="Alumnos sin preparar para prácticas">
-                    Alumnos sin preparar para prácticas
-                  </option>
-                  <option value="Captar familias">Captar familias</option>
-                  <option value="Fondos por ejecutar">Fondos por ejecutar</option>
-                  <option value="Diferenciarse en licitaciones">Diferenciarse en licitaciones</option>
-                  <option value="Otro">Otro dolor</option>
+                  {doloresPorTipo(centro.tipo, dolorSeleccionado).map((d) => (
+                    <option key={d} value={d}>
+                      {d === 'Otro' ? 'Otro dolor' : d}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -888,25 +899,112 @@ Equipo Eonesia`;
                   {contactos.map((ct) => (
                     <div
                       key={ct.id}
-                      className="p-2.5 rounded-lg bg-[#0D0D14] border border-[rgba(255,255,255,0.06)] flex items-center justify-between gap-2"
+                      className="p-2.5 rounded-lg bg-[#0D0D14] border border-[rgba(255,255,255,0.06)] space-y-2"
                     >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-xs text-[#F2F2F7]">{ct.nombre}</span>
-                          <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-[#161622] text-[#00C8FF] border border-[rgba(0,200,255,0.3)]">
-                            {ct.rol}
-                          </span>
+                      {editCtId === ct.id ? (
+                        <div className="space-y-2 text-xs">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <input
+                              type="text"
+                              value={editCt.nombre}
+                              onChange={(e) => setEditCt({ ...editCt, nombre: e.target.value })}
+                              placeholder="Nombre"
+                              className="p-2 rounded bg-[#05050A] border border-[rgba(154,154,176,0.3)] text-[#F2F2F7]"
+                            />
+                            <input
+                              type="text"
+                              value={editCt.cargo}
+                              onChange={(e) => setEditCt({ ...editCt, cargo: e.target.value })}
+                              placeholder="Cargo"
+                              className="p-2 rounded bg-[#05050A] border border-[rgba(154,154,176,0.3)] text-[#F2F2F7]"
+                            />
+                            <input
+                              type="email"
+                              value={editCt.email}
+                              onChange={(e) => setEditCt({ ...editCt, email: e.target.value })}
+                              placeholder="Email (vacío si no hay)"
+                              className="p-2 rounded bg-[#05050A] border border-[rgba(154,154,176,0.3)] text-[#F2F2F7]"
+                            />
+                            <select
+                              value={editCt.rol}
+                              onChange={(e) => setEditCt({ ...editCt, rol: e.target.value as RolContacto })}
+                              className="p-2 rounded bg-[#05050A] border border-[rgba(154,154,176,0.3)] text-[#F2F2F7]"
+                            >
+                              <option value="Decisor">Decisor (Firma)</option>
+                              <option value="Influyente">Influyente (TIC / Docente)</option>
+                              <option value="Usuario">Usuario</option>
+                            </select>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <button type="button" onClick={() => setEditCtId(null)} className="px-2.5 py-1 text-[#B4B4C8]">
+                              Cancelar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                crmRepo.actualizarContacto(ct.id, editCt);
+                                setEditCtId(null);
+                              }}
+                              className="px-3 py-1 font-bold rounded bg-[#00C8FF] text-[#0D0D14]"
+                            >
+                              Guardar cambios
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-[11px] text-[#B4B4C8]">{ct.cargo}</p>
-                        {ct.email && (
-                          <a
-                            href={`mailto:${ct.email}`}
-                            className="text-[11px] text-[#00C8FF] hover:underline"
-                          >
-                            {ct.email}
-                          </a>
-                        )}
-                      </div>
+                      ) : (
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs text-[#F2F2F7]">{ct.nombre}</span>
+                              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono bg-[#161622] text-[#00C8FF] border border-[rgba(0,200,255,0.3)]">
+                                {ct.rol}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-[#B4B4C8]">{ct.cargo}</p>
+                            {ct.email && (
+                              <a href={`mailto:${ct.email}`} className="text-[11px] text-[#00C8FF] hover:underline break-all">
+                                {ct.email}
+                              </a>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 text-[11px]">
+                            {borrarCtId === ct.id ? (
+                              <>
+                                <span className="text-[#B4B4C8]">¿Eliminar?</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    crmRepo.eliminarContacto(ct.id);
+                                    setBorrarCtId(null);
+                                  }}
+                                  className="font-bold text-red-400 hover:underline"
+                                >
+                                  Sí
+                                </button>
+                                <button type="button" onClick={() => setBorrarCtId(null)} className="text-[#B4B4C8] hover:underline">
+                                  No
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditCtId(ct.id);
+                                    setEditCt({ nombre: ct.nombre, cargo: ct.cargo, email: ct.email || '', rol: ct.rol });
+                                  }}
+                                  className="text-[#00C8FF] hover:underline"
+                                >
+                                  Editar
+                                </button>
+                                <button type="button" onClick={() => setBorrarCtId(ct.id)} className="text-[#6B6B80] hover:text-red-400">
+                                  Eliminar
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ))}
 

@@ -48,6 +48,14 @@ export type DolorPrincipal =
   | 'Captar familias'
   | 'Fondos por ejecutar'
   | 'Diferenciarse en licitaciones'
+  // Editoriales y plataformas
+  | 'Catálogo digital poco diferenciado'
+  | 'Producción de contenido lenta o cara'
+  | 'Retención de licencias y centros'
+  // Universidades
+  | 'Empleabilidad y prácticas'
+  | 'Captación de alumnado'
+  | 'Diferenciación de la oferta online'
   | 'Otro';
 
 export type MotivoPerdida = 
