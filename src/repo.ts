@@ -157,6 +157,7 @@ class CRMRepository {
   private snapshotPrevio: EstadoCRM | null = null;
   private inicializado: boolean = false;
   private ultimoRespaldoTimestamp: number = 0;
+  private datosIlegiblesDetectados: boolean = false;
 
   constructor() {
     this.estado = this.cargarDesdeStorage();
@@ -748,25 +749,12 @@ class CRMRepository {
           if (!parseado.config) parseado.config = DEFAULT_CONFIG;
           if (!parseado.juego) parseado.juego = DEFAULT_JUEGO;
 
-          // Si ninguna oportunidad abierta tiene fecha para hoy o vencida, asegurar las 3 primeras para prueba
-          const hoyStr = new Date().toISOString().split('T')[0];
-          const tieneHoyOVencidas = parseado.oportunidades.some(
-            (o: any) => o.etapa !== 'Ganado' && o.etapa !== 'Perdido' && o.proximoPaso?.fecha && o.proximoPaso.fecha <= hoyStr
-          );
-          if (!tieneHoyOVencidas) {
-            const abiertas = parseado.oportunidades.filter((o: any) => o.etapa !== 'Ganado' && o.etapa !== 'Perdido');
-            if (abiertas[0]?.proximoPaso) abiertas[0].proximoPaso.fecha = hoyStr;
-            if (abiertas[1]?.proximoPaso) {
-              const d1 = new Date();
-              d1.setDate(d1.getDate() - 1);
-              abiertas[1].proximoPaso.fecha = d1.toISOString().split('T')[0];
-            }
-            if (abiertas[2]?.proximoPaso) {
-              const d2 = new Date();
-              d2.setDate(d2.getDate() - 2);
-              abiertas[2].proximoPaso.fecha = d2.toISOString().split('T')[0];
-            }
-          }
+          // Normalizar campos opcionales sin tocar los datos del usuario
+          parseado.config = { ...DEFAULT_CONFIG, ...parseado.config };
+          parseado.juego = { ...DEFAULT_JUEGO, ...parseado.juego };
+          if (!Array.isArray(parseado.contactos)) parseado.contactos = [];
+          // NOTA: antes aquí se forzaban fechas de "Hoy toca" en las 3 primeras
+          // oportunidades abiertas en cada carga. Eliminado: reescribía datos reales.
 
           this.snapshotPrevio = JSON.parse(JSON.stringify(parseado));
           return parseado;
@@ -775,12 +763,26 @@ class CRMRepository {
     } catch (err) {
       console.warn('No se pudo leer localStorage, cargando datos iniciales:', err);
     }
+    // Si había algo guardado pero no se pudo interpretar, NO se sobrescribe:
+    // se guarda una copia literal en una clave de rescate antes de continuar.
+    try {
+      const bruto = localStorage.getItem(STORAGE_KEY);
+      if (bruto) {
+        localStorage.setItem(`${STORAGE_KEY}_rescate_${Date.now()}`, bruto);
+        console.warn('Datos guardados ilegibles: copia literal conservada en clave de rescate.');
+        this.datosIlegiblesDetectados = true;
+      }
+    } catch {
+      // Ignorar
+    }
     const inicial = crearEstadoInicial();
     this.snapshotPrevio = JSON.parse(JSON.stringify(inicial));
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(inicial));
-    } catch {
-      // Ignorar fallo inicial
+    if (!this.datosIlegiblesDetectados) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(inicial));
+      } catch {
+        // Ignorar fallo inicial
+      }
     }
     return inicial;
   }
@@ -1188,6 +1190,31 @@ class CRMRepository {
     this.guardar();
     this.notificarCambio();
     return nuevo;
+  }
+
+  public actualizarContacto(contactoId: string, cambios: Partial<Omit<Contacto, 'id' | 'centroId'>>): void {
+    const ct = this.estado.contactos.find((c) => c.id === contactoId);
+    if (!ct) return;
+    if (cambios.nombre !== undefined) ct.nombre = cambios.nombre.trim() || ct.nombre;
+    if (cambios.cargo !== undefined) ct.cargo = cambios.cargo.trim();
+    if (cambios.email !== undefined) ct.email = cambios.email.trim();
+    if (cambios.rol !== undefined) ct.rol = cambios.rol;
+    this.guardar('Contacto editado');
+    this.notificarCambio();
+  }
+
+  /** Elimina un contacto del CRM y lo desvincula de todas las oportunidades. */
+  public eliminarContacto(contactoId: string): void {
+    const existe = this.estado.contactos.some((c) => c.id === contactoId);
+    if (!existe) return;
+    this.estado.contactos = this.estado.contactos.filter((c) => c.id !== contactoId);
+    this.estado.oportunidades.forEach((o) => {
+      if (o.contactoIds?.includes(contactoId)) {
+        o.contactoIds = o.contactoIds.filter((id) => id !== contactoId);
+      }
+    });
+    this.guardar('Contacto eliminado');
+    this.notificarCambio();
   }
 
   public actualizarConfig(cambios: Partial<ConfiguracionCRM>): void {

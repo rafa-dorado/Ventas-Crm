@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   DolorPrincipal,
   EstadoCRM,
@@ -6,7 +6,7 @@ import {
   TipoCentro,
 } from '../types';
 import { crmRepo } from '../repo';
-import { normalizarNombreCentro } from '../utils/crmHelpers';
+import { doloresPorTipo, normalizarNombreCentro } from '../utils/crmHelpers';
 import { AlertCircle, Plus, Sparkles, X } from 'lucide-react';
 
 interface ModalNuevoLeadProps {
@@ -36,6 +36,26 @@ export const ModalNuevoLead: React.FC<ModalNuevoLeadProps> = ({
   // Centro duplicado detectado
   const [centroExistenteId, setCentroExistenteId] = useState<string | null>(null);
   const [mensajeDuplicado, setMensajeDuplicado] = useState<string | null>(null);
+
+  // Reiniciar el formulario cada vez que se abre (evita arrastrar el email u otros datos del lead anterior)
+  useEffect(() => {
+    if (!abierto) return;
+    setNombreCentro('');
+    setContactoNombre('');
+    setContactoCargo('Director/a Pedagógico');
+    setContactoEmail('');
+    setContactoRol('Decisor');
+    setNotas('');
+    setCentroExistenteId(null);
+    setMensajeDuplicado(null);
+  }, [abierto]);
+
+  // Si el dolor elegido no aplica al nuevo tipo, pasar al primero disponible
+  useEffect(() => {
+    const opciones = doloresPorTipo(tipoCentro);
+    if (!opciones.includes(dolor)) setDolor(opciones[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoCentro]);
 
   if (!abierto) return null;
 
@@ -260,14 +280,11 @@ export const ModalNuevoLead: React.FC<ModalNuevoLeadProps> = ({
                   onChange={(e) => setDolor(e.target.value as DolorPrincipal)}
                   className="w-full bg-[#05050A] border border-[rgba(154,154,176,0.3)] rounded-lg p-2.5 text-[#F2F2F7]"
                 >
-                  <option value="Abandono del alumnado">Abandono del alumnado</option>
-                  <option value="Alumnos sin preparar para prácticas">
-                    Alumnos sin preparar para prácticas
-                  </option>
-                  <option value="Captar familias">Captar familias</option>
-                  <option value="Fondos por ejecutar">Fondos por ejecutar</option>
-                  <option value="Diferenciarse en licitaciones">Diferenciarse en licitaciones</option>
-                  <option value="Otro">Otro</option>
+                  {doloresPorTipo(tipoCentro).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>

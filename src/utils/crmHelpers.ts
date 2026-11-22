@@ -573,3 +573,46 @@ export function calcularUrgenciaProximoPaso(op: {
   };
 }
 
+
+
+/** Opciones de "dolor principal" según el tipo de organización (los valores antiguos siguen siendo válidos). */
+const DOLORES_CENTRO: DolorPrincipal[] = [
+  'Abandono del alumnado',
+  'Alumnos sin preparar para prácticas',
+  'Captar familias',
+  'Fondos por ejecutar',
+  'Diferenciarse en licitaciones',
+];
+
+export function doloresPorTipo(tipo: TipoCentro | undefined, actual?: DolorPrincipal): DolorPrincipal[] {
+  let lista: DolorPrincipal[];
+  switch (tipo) {
+    case 'Editorial':
+      lista = [
+        'Catálogo digital poco diferenciado',
+        'Producción de contenido lenta o cara',
+        'Retención de licencias y centros',
+        'Diferenciarse en licitaciones',
+      ];
+      break;
+    case 'Universidad':
+      lista = [
+        'Empleabilidad y prácticas',
+        'Captación de alumnado',
+        'Diferenciación de la oferta online',
+        'Abandono del alumnado',
+        'Fondos por ejecutar',
+      ];
+      break;
+    default:
+      lista = [...DOLORES_CENTRO];
+  }
+  if (!lista.includes('Otro')) lista.push('Otro');
+  if (actual && !lista.includes(actual)) lista.unshift(actual);
+  return lista;
+}
+
+/** Tipos para los que no tiene sentido mostrar "alumnos aprox.". */
+export function tipoSinAlumnos(tipo: TipoCentro | undefined): boolean {
+  return tipo === 'Editorial' || tipo === 'Institucional';
+}

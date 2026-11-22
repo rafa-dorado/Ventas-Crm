@@ -131,7 +131,9 @@ export const HoyToca: React.FC<HoyTocaProps> = ({
       // 2. Abre el selector de fecha para programar el siguiente paso
       setSelectorOp(op);
       setNuevaFecha(generarFechaFutura(3)); // Preselección sugerida a 3 días
-      setNuevaAccion(`Seguimiento tras: ${accionCompletada.slice(0, 45)}`);
+      // Propuesta limpia: sin encadenar "Seguimiento tras: Seguimiento tras: ..."
+      const accionBase = accionCompletada.replace(/^(Seguimiento tras:\s*)+/i, '').trim();
+      setNuevaAccion(`Seguimiento tras: ${accionBase.slice(0, 60)}`);
     } finally {
       setCargandoOpId(null);
     }
@@ -159,6 +161,21 @@ export const HoyToca: React.FC<HoyTocaProps> = ({
     } finally {
       setGuardandoPaso(false);
     }
+  };
+
+  // Cerrar el selector sin elegir fecha: la acción ya está hecha, así que se
+  // reprograma a +3 días para que no siga apareciendo como vencida en "Hoy toca".
+  const handleCerrarSinFecha = () => {
+    if (!selectorOp || guardandoPaso) return;
+    crmRepo.actualizarOportunidad(selectorOp.id, {
+      proximoPaso: {
+        accion: nuevaAccion.trim() || 'Seguimiento',
+        fecha: generarFechaFutura(3),
+      },
+    });
+    setSelectorOp(null);
+    setNuevaFecha('');
+    setNuevaAccion('');
   };
 
   const calcularUrgencia = (fecha: string) => {
@@ -401,7 +418,7 @@ export const HoyToca: React.FC<HoyTocaProps> = ({
               <button
                 type="button"
                 disabled={guardandoPaso}
-                onClick={() => setSelectorOp(null)}
+                onClick={handleCerrarSinFecha}
                 className="text-[#B4B4C8] hover:text-[#F2F2F7] p-1 rounded-md hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 <X size={16} />
@@ -479,10 +496,10 @@ export const HoyToca: React.FC<HoyTocaProps> = ({
                 <button
                   type="button"
                   disabled={guardandoPaso}
-                  onClick={() => setSelectorOp(null)}
+                  onClick={handleCerrarSinFecha}
                   className="px-3 py-1.5 rounded-lg text-xs text-[#B4B4C8] hover:text-[#F2F2F7] hover:bg-white/5 transition-colors disabled:opacity-50"
                 >
-                  Omitir fecha
+                  Más tarde (+3 días)
                 </button>
                 <button
                   type="submit"
