@@ -17,6 +17,7 @@ import {
   TipoCentro,
   RespaldoCifrado,
   RespaldoCifradoInfo,
+  Senal,
 } from './types';
 import { crearEstadoInicial, DEFAULT_CONFIG, DEFAULT_JUEGO } from './data/initialData';
 import {
@@ -30,6 +31,7 @@ import {
 const STORAGE_KEY = 'eonesia_crm_state_v2';
 const BACKUPS_KEY = 'eonesia_crm_respaldos_cifrados_v1';
 const MAX_RESPALDOS = 10;
+const RESPALDO_LOCAL_MAX_CHARS = 400_000;
 const CLAVE_CIFRADO = 'Eonesia-CRM-EdTech-Immersive-2026-SecretSeed';
 
 /**
@@ -158,6 +160,9 @@ class CRMRepository {
   private inicializado: boolean = false;
   private ultimoRespaldoTimestamp: number = 0;
   private datosIlegiblesDetectados: boolean = false;
+  // --- Nube (Supabase) ---
+  private sincronizador: ((estado: EstadoCRM) => void) | null = null;
+  private avisoCuotaMostrado = false;
 
   constructor() {
     this.estado = this.cargarDesdeStorage();
@@ -236,25 +241,48 @@ class CRMRepository {
 
   // --- Persistencia con rollback y respaldo automático cifrado ---
   private guardar(motivoRespaldo?: string): boolean {
+    const serializado = JSON.stringify(this.estado);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.estado));
-      this.snapshotPrevio = JSON.parse(JSON.stringify(this.estado));
+      localStorage.setItem(STORAGE_KEY, serializado);
+      this.snapshotPrevio = JSON.parse(serializado);
 
-      // Respaldo automático cifrado con marca de tiempo en cada modificación
-      this.realizarRespaldo();
+      // Con la nube activa y un estado grande (p. ej. TAM completo), los respaldos
+      // locales completos llenarían el navegador: la nube ya es la copia de seguridad.
+      const respaldosLocales = !this.sincronizador || serializado.length < RESPALDO_LOCAL_MAX_CHARS;
+      if (respaldosLocales) {
+        // Respaldo automático cifrado con marca de tiempo en cada modificación
+        this.realizarRespaldo();
 
-      // Respaldo periódico estructurado para el historial del CRM
-      const ahora = Date.now();
-      if (motivoRespaldo || ahora - this.ultimoRespaldoTimestamp > 20000) {
-        this.crearRespaldoCifradoInterno(
-          motivoRespaldo || 'Respaldo automático con marca de tiempo'
-        );
-        this.ultimoRespaldoTimestamp = ahora;
+        // Respaldo periódico estructurado para el historial del CRM
+        const ahora = Date.now();
+        if (motivoRespaldo || ahora - this.ultimoRespaldoTimestamp > 20000) {
+          this.crearRespaldoCifradoInterno(
+            motivoRespaldo || 'Respaldo automático con marca de tiempo'
+          );
+          this.ultimoRespaldoTimestamp = ahora;
+        }
       }
 
+      this.sincronizador?.(this.estado);
       return true;
     } catch (error) {
       console.error('Error al guardar en localStorage:', error);
+
+      // Con nube activa, un fallo de cuota local no debe revertir cambios: se guardan en la nube.
+      if (this.sincronizador) {
+        this.snapshotPrevio = JSON.parse(serializado);
+        this.sincronizador(this.estado);
+        if (!this.avisoCuotaMostrado) {
+          this.avisoCuotaMostrado = true;
+          this.emitirNotificacion({
+            tipo: 'info',
+            titulo: 'Guardando solo en la nube',
+            descripcion:
+              'El navegador no tiene espacio para la copia local completa. Tus cambios se guardan en Supabase.',
+          });
+        }
+        return true;
+      }
 
       // 1. Intentar rollback con el snapshot previo en memoria
       let restauradoConExito = false;
@@ -1659,6 +1687,217 @@ class CRMRepository {
       }
     }
   }
+
+  // =========================================================================
+  // NUBE (Supabase)
+  // =========================================================================
+
+  /** Activa el envío de cada guardado a la nube. */
+  public conectarSincronizador(fn: ((estado: EstadoCRM) => void) | null): void {
+    this.sincronizador = fn;
+  }
+
+  /**
+   * Sustituye el estado en memoria por el que viene de la nube.
+   * Antes conserva una copia literal del estado local en una clave de rescate.
+   */
+  public cargarEstadoNube(parcial: Partial<EstadoCRM>): EstadoCRM {
+    try {
+      const local = localStorage.getItem(STORAGE_KEY);
+      if (local && !this.estado.esDatosEjemplo) {
+        const nube = JSON.stringify({ c: parcial.centros?.length, o: parcial.oportunidades?.length });
+        const loc = JSON.stringify({ c: this.estado.centros.length, o: this.estado.oportunidades.length });
+        if (nube !== loc) localStorage.setItem(`${STORAGE_KEY}_antes_de_nube_${Date.now()}`, local);
+      }
+    } catch {
+      // Sin espacio para la copia de rescate: la nube sigue siendo la fuente de verdad
+    }
+    this.estado = {
+      centros: parcial.centros || [],
+      contactos: parcial.contactos || [],
+      oportunidades: parcial.oportunidades || [],
+      juego: { ...DEFAULT_JUEGO, ...(parcial.juego || {}) },
+      config: { ...DEFAULT_CONFIG, ...(parcial.config || {}) },
+      esDatosEjemplo: parcial.esDatosEjemplo ?? false,
+    };
+    const sinc = this.sincronizador;
+    this.sincronizador = null; // no reenviar lo que acaba de llegar
+    this.guardar();
+    this.sincronizador = sinc;
+    this.notificarCambio();
+    return this.obtenerEstado();
+  }
+
+  // =========================================================================
+  // GTM: TAM, cuentas y señales
+  // =========================================================================
+
+  /**
+   * Importa el TAM (CSV de cuentas) haciendo upsert por externalId (código de centro).
+   * - Si el centro existe: actualiza solo los campos GTM y rellena los vacíos; no toca nombre ni oportunidades.
+   * - Si no existe: lo crea sin oportunidad (el Tablero no se llena de 3.000 tarjetas).
+   * - Opcional: crea oportunidad en Detectado para los Tier 1.
+   */
+  public importarTAM(
+    filas: Array<Partial<Centro>>,
+    opciones: { crearOportunidadTier1?: boolean } = {}
+  ): { creados: number; actualizados: number; oportunidades: number; omitidos: number } {
+    const porExternal = new Map<string, Centro>();
+    const porNombre = new Map<string, Centro>();
+    for (const c of this.estado.centros) {
+      if (c.externalId) porExternal.set(c.externalId.trim().toLowerCase(), c);
+      porNombre.set(`${normalizarNombreCentro(c.nombre)}|${normalizarNombreCentro(c.provincia || '')}`, c);
+    }
+    let creados = 0;
+    let actualizados = 0;
+    let omitidos = 0;
+    let oportunidades = 0;
+    const ahora = new Date().toISOString();
+
+    for (const f of filas) {
+      if (!f.nombre || !f.externalId) {
+        omitidos++;
+        continue;
+      }
+      const ext = f.externalId.trim();
+      let existente = porExternal.get(ext.toLowerCase());
+      if (!existente) {
+        // Centro creado a mano antes del TAM: se enlaza por nombre + provincia exactos (normalizados)
+        const candidato = porNombre.get(`${normalizarNombreCentro(f.nombre)}|${normalizarNombreCentro(f.provincia || '')}`);
+        if (candidato && !candidato.externalId) existente = candidato;
+      }
+      const gtm: Partial<Centro> = {
+        segmento: f.segmento,
+        tier: f.tier,
+        fitScore: f.fitScore,
+        telefono: f.telefono,
+        emailGeneral: f.emailGeneral,
+        municipio: f.municipio,
+        redPadre: f.redPadre,
+        fuente: f.fuente,
+      };
+      if (existente) {
+        for (const [k, v] of Object.entries(gtm)) {
+          if (v !== undefined && v !== '') (existente as unknown as Record<string, unknown>)[k] = v;
+        }
+        if (!existente.externalId) existente.externalId = ext;
+        if (!existente.web && f.web) existente.web = f.web;
+        if (!existente.red && f.redPadre) existente.red = f.redPadre;
+        actualizados++;
+      } else {
+        const nuevo: Centro = {
+          id: `c-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+          nombre: f.nombre.trim(),
+          tipo: (f.tipo as TipoCentro) || 'Publico',
+          provincia: f.provincia?.trim() || 'No especificada',
+          alumnos: f.alumnos || 0,
+          web: f.web?.trim() || '',
+          red: f.redPadre || undefined,
+          externalId: ext,
+          origen: 'csv',
+          verificado: true, // fuente oficial (Junta de Andalucía, datos abiertos)
+          creadoEn: ahora,
+          ...gtm,
+        };
+        this.estado.centros.push(nuevo);
+        porExternal.set(ext.toLowerCase(), nuevo);
+        existente = nuevo;
+        creados++;
+      }
+      if (opciones.crearOportunidadTier1 && existente.tier === 1) {
+        if (this.crearOportunidadSiNoHay(existente)) oportunidades++;
+      }
+    }
+
+    if (creados + actualizados > 0) {
+      this.estado.esDatosEjemplo = false;
+      this.guardar('Importación TAM');
+      this.notificarCambio();
+      this.emitirNotificacion({
+        tipo: 'info',
+        titulo: 'TAM importado',
+        descripcion: `${creados} cuentas nuevas, ${actualizados} actualizadas${oportunidades ? `, ${oportunidades} oportunidades Tier 1` : ''}.`,
+      });
+    }
+    return { creados, actualizados, oportunidades, omitidos };
+  }
+
+  /** Crea una oportunidad en Detectado para el centro si no tiene ninguna abierta. Devuelve la oportunidad (nueva o existente). */
+  private crearOportunidadSiNoHay(centro: Centro): Oportunidad | null {
+    const abierta = this.estado.oportunidades.find(
+      (o) => o.centroId === centro.id && o.etapa !== 'Ganado' && o.etapa !== 'Perdido'
+    );
+    if (abierta) return null;
+    const sugerido = calcularProductoSugerido(centro.tipo, undefined, centro.red);
+    const op: Oportunidad = {
+      id: `op-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      centroId: centro.id,
+      contactoIds: [],
+      etapa: 'Detectado',
+      valor: 0,
+      dolor: 'Otro',
+      productoSugerido: sugerido.producto,
+      productoElegido: sugerido.producto,
+      criterios: [null, null, calcularCriterioSegmentoPorTipo(centro.tipo), null, null],
+      empatia: ['', '', '', '', '', ''],
+      proximoPaso: {
+        accion: 'Identificar coordinación TDE / dirección y preparar primer mensaje',
+        fecha: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+      },
+      historialEtapas: [{ etapa: 'Detectado', fecha: new Date().toISOString() }],
+      actividades: [],
+      creadoEn: new Date().toISOString(),
+    };
+    this.estado.oportunidades.push(op);
+    return op;
+  }
+
+  /** Pasa una cuenta del TAM al Tablero (Detectado). Devuelve el id de la oportunidad abierta. */
+  public trabajarCuenta(centroId: string): string | null {
+    const centro = this.estado.centros.find((c) => c.id === centroId);
+    if (!centro) return null;
+    const nueva = this.crearOportunidadSiNoHay(centro);
+    if (nueva) {
+      this.guardar();
+      this.notificarCambio();
+      return nueva.id;
+    }
+    const abierta = this.estado.oportunidades.find(
+      (o) => o.centroId === centro.id && o.etapa !== 'Ganado' && o.etapa !== 'Perdido'
+    );
+    return abierta?.id ?? null;
+  }
+
+  /**
+   * Aprueba una señal del radar: la registra como actividad en la oportunidad del centro
+   * (creándola si hace falta) y fija el próximo paso para mañana.
+   */
+  public aprobarSenal(senal: Senal): { oportunidadId: string | null; motivo?: string } {
+    const centro = this.estado.centros.find(
+      (c) => c.externalId && senal.codigo_centro && c.externalId.trim() === senal.codigo_centro.trim()
+    );
+    if (!centro) return { oportunidadId: null, motivo: 'El centro de la señal no está en el CRM (importa antes el TAM).' };
+    const opId = this.trabajarCuenta(centro.id);
+    if (!opId) return { oportunidadId: null, motivo: 'No se pudo crear la oportunidad.' };
+    const partes = [
+      senal.resumen,
+      senal.primera_frase ? `Primera frase sugerida: ${senal.primera_frase}` : '',
+      senal.evidencia ? `Evidencia: ${senal.evidencia}` : '',
+      `Fuente: ${senal.enlace}`,
+    ].filter(Boolean);
+    this.registrarActividad(opId, {
+      tipo: 'nota',
+      titulo: `Señal: ${senal.titulo || senal.tema || 'publicación del centro'}`,
+      nota: partes.join('\n'),
+      autor: 'Radar de señales',
+    });
+    const manana = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    this.actualizarOportunidad(opId, {
+      proximoPaso: { accion: 'Escribir al centro usando la señal detectada', fecha: manana },
+    });
+    return { oportunidadId: opId };
+  }
+
 }
 
 export const crmRepo = new CRMRepository();

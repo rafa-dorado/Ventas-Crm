@@ -21,6 +21,33 @@ export interface Centro {
   origen: OrigenCentro;
   verificado: boolean;
   creadoEn: string;
+  // --- Campos GTM (opcionales; los rellena el importador del TAM) ---
+  segmento?: string;
+  tier?: 1 | 2 | 3;
+  fitScore?: number;
+  telefono?: string;
+  emailGeneral?: string;
+  municipio?: string;
+  redPadre?: string;
+  fuente?: string;
+}
+
+/** Señal detectada por el radar (blogs/RSS de centros) */
+export interface Senal {
+  id: number;
+  fecha_senal: string | null;
+  codigo_centro: string | null;
+  centro: string | null;
+  titulo: string | null;
+  enlace: string;
+  palabras: string | null;
+  relevante: string | null;
+  tema: string | null;
+  resumen: string | null;
+  primera_frase: string | null;
+  evidencia: string | null;
+  estado: 'nueva' | 'aprobada' | 'descartada';
+  creado_en: string;
 }
 
 export type RolContacto = 'Decisor' | 'Influyente' | 'Usuario';

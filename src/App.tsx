@@ -14,6 +14,8 @@ import { ProspectarView } from './components/Prospectar/ProspectarView';
 import { ClienteIdealView } from './components/ClienteIdeal/ClienteIdealView';
 import { LogrosView } from './components/Logros/LogrosView';
 import { GuiaView } from './components/Guia/GuiaView';
+import { CuentasView } from './components/Cuentas/CuentasView';
+import { SenalesView } from './components/Senales/SenalesView';
 import { FichaLateral } from './components/FichaLateral';
 import { ModalNuevoLead } from './components/ModalNuevoLead';
 import { ModalImportarCopia } from './components/ModalImportarCopia';
@@ -111,6 +113,14 @@ export default function App() {
               estado={estado}
               onAbrirFicha={(opId) => setFichaOpId(opId)}
             />
+          )}
+
+          {tabActiva === 'cuentas' && (
+            <CuentasView estado={estado} onAbrirFicha={(opId) => setFichaOpId(opId)} />
+          )}
+
+          {tabActiva === 'senales' && (
+            <SenalesView estado={estado} onAbrirFicha={(opId) => setFichaOpId(opId)} />
           )}
 
           {tabActiva === 'cliente_ideal' && (

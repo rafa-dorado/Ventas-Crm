@@ -12,12 +12,16 @@ import {
   ExternalLink,
   Shield,
   Layers,
+  Building2,
+  Radar,
 } from 'lucide-react';
 
 export type TabActiva =
   | 'tablero'
   | 'panel'
   | 'prospectar'
+  | 'cuentas'
+  | 'senales'
   | 'cliente_ideal'
   | 'logros'
   | 'guia';
@@ -43,6 +47,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   }> = [
     { id: 'tablero', etiqueta: 'Tablero', icono: Kanban, badge: conteoAbiertas },
     { id: 'panel', etiqueta: 'Panel', icono: BarChart3 },
+    { id: 'cuentas', etiqueta: 'Cuentas', icono: Building2 },
+    { id: 'senales', etiqueta: 'Señales', icono: Radar },
     { id: 'prospectar', etiqueta: 'Prospectar', icono: Compass },
     { id: 'cliente_ideal', etiqueta: 'Cliente ideal', icono: Target },
     { id: 'logros', etiqueta: 'Logros', icono: Trophy },
@@ -52,8 +58,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   const itemsMovilPrincipales = [
     { id: 'tablero' as TabActiva, etiqueta: 'Tablero', icono: Kanban, badge: conteoAbiertas },
     { id: 'panel' as TabActiva, etiqueta: 'Panel', icono: BarChart3 },
-    { id: 'prospectar' as TabActiva, etiqueta: 'Prospectar', icono: Compass },
-    { id: 'logros' as TabActiva, etiqueta: 'Logros', icono: Trophy },
+    { id: 'cuentas' as TabActiva, etiqueta: 'Cuentas', icono: Building2 },
+    { id: 'senales' as TabActiva, etiqueta: 'Señales', icono: Radar },
   ];
 
   return (
@@ -175,7 +181,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         <button
           onClick={() => setMenuMasAbierto(!menuMasAbierto)}
           className={`flex flex-col items-center justify-center py-1 px-2 rounded-lg transition-colors ${
-            menuMasAbierto || tabActiva === 'cliente_ideal' || tabActiva === 'guia'
+            menuMasAbierto || tabActiva === 'cliente_ideal' || tabActiva === 'guia' || tabActiva === 'prospectar' || tabActiva === 'logros'
               ? 'text-[#00C8FF]'
               : 'text-[#B4B4C8]'
           }`}
@@ -206,6 +212,36 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <X size={18} />
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                onCambiarTab('prospectar');
+                setMenuMasAbierto(false);
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors ${
+                tabActiva === 'prospectar'
+                  ? 'bg-[rgba(0,200,255,0.15)] text-[#00C8FF] border border-[rgba(0,200,255,0.3)]'
+                  : 'text-[#F2F2F7] hover:bg-[#161622]'
+              }`}
+            >
+              <Compass size={18} className="text-[#00C8FF]" />
+              <span>Prospectar</span>
+            </button>
+
+            <button
+              onClick={() => {
+                onCambiarTab('logros');
+                setMenuMasAbierto(false);
+              }}
+              className={`w-full flex items-center gap-3 p-3 rounded-lg text-sm font-medium transition-colors ${
+                tabActiva === 'logros'
+                  ? 'bg-[rgba(0,200,255,0.15)] text-[#00C8FF] border border-[rgba(0,200,255,0.3)]'
+                  : 'text-[#F2F2F7] hover:bg-[#161622]'
+              }`}
+            >
+              <Trophy size={18} className="text-[#00C8FF]" />
+              <span>Logros</span>
+            </button>
 
             <button
               onClick={() => {
