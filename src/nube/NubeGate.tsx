@@ -15,6 +15,7 @@ import {
   onEstadoSync,
   programarSync,
   salir,
+  traerNuevosDelFormulario,
 } from './sync';
 
 type Fase = 'comprobando' | 'login' | 'cargando' | 'migrar' | 'listo' | 'error';
@@ -84,6 +85,23 @@ export const NubeGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Interesados del formulario web: se comprueban cada 2 minutos y al volver a la pestaña
+  useEffect(() => {
+    if (fase !== 'listo' || !nubeConfigurada) return;
+    const comprobar = async () => {
+      const nuevos = await traerNuevosDelFormulario(crmRepo.idsLocales());
+      if (nuevos) crmRepo.incorporarDeNube(nuevos);
+    };
+    void comprobar();
+    const t = setInterval(() => void comprobar(), 120000);
+    const alVolver = () => { if (!document.hidden) void comprobar(); };
+    document.addEventListener('visibilitychange', alVolver);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', alVolver);
+    };
+  }, [fase]);
 
   useEffect(() => {
     if (fase !== 'migrar') return;

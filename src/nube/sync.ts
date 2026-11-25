@@ -245,6 +245,23 @@ export async function forzarSync(): Promise<void> {
   await enviar();
 }
 
+// --- Interesados del formulario web (los crea la función crear_lead_formulario) ---
+export async function traerNuevosDelFormulario(idsLocales: Set<string>): Promise<Partial<EstadoCRM> | null> {
+  if (!supabase || !sesion || !activo) return null;
+  const { data, error } = await supabase
+    .from('crm_items')
+    .select('tipo,id,data')
+    .like('id', '%-form-%')
+    .order('id');
+  if (error || !data) return null;
+  const nuevos = data.filter((f: { tipo: TipoItem; id: string }) => !idsLocales.has(`${f.tipo}:${f.id}`));
+  if (!nuevos.length) return null;
+  const de = (t: TipoItem) => nuevos.filter((f: { tipo: TipoItem }) => f.tipo === t).map((f: { data: unknown }) => f.data);
+  // Ya están en la nube: se marcan como sincronizados para no reenviarlos
+  nuevos.forEach((f: { tipo: TipoItem; id: string; data: unknown }) => ultimo.set(`${f.tipo}:${f.id}`, JSON.stringify(f.data)));
+  return { centros: de('centro') as Centro[], contactos: de('contacto') as Contacto[], oportunidades: de('oportunidad') as Oportunidad[] };
+}
+
 // --- Señales del radar ---
 export async function listarSenales(estado: Senal['estado'] = 'nueva'): Promise<Senal[]> {
   if (!supabase || !sesion) return [];

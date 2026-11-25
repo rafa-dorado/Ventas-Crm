@@ -1,0 +1,42 @@
+name: Radar de señales
+on:
+  schedule:
+    - cron: "17 6 * * 1-5"   # días laborables, 07:17 en Madrid (invierno)
+  workflow_dispatch:
+    inputs:
+      modo:
+        description: "normal = buscar señales · comprobar = ver qué blogs responden"
+        type: choice
+        options: [normal, comprobar]
+        default: normal
+permissions:
+  contents: read
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install feedparser pandas
+      - name: Radar
+        env:
+          # Públicos por diseño (la seguridad la dan RLS y el token del radar)
+          SUPABASE_URL: https://wzmysfnvyzqgdqhvuxzm.supabase.co
+          SUPABASE_ANON_KEY: sb_publishable_Lp_mN-TRhVZ4o2_ZT40nwQ_QcDN0EhD
+          RADAR_TOKEN: ${{ secrets.RADAR_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ "${{ inputs.modo }}" = "comprobar" ]; then
+            python radar/radar.py radar/centros.csv --comprobar | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            python radar/radar.py radar/centros.csv | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: senales
+          path: senales/
+          if-no-files-found: ignore
