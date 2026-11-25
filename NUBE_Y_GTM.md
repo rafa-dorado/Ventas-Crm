@@ -24,12 +24,40 @@
 - Si falla la red, los cambios siguen en memoria y en localStorage y se reintenta cada 15 s. Al cerrar la pestaña con cambios pendientes, el navegador avisa.
 - Varios dispositivos a la vez: gana la última escritura por registro.
 
-## Formulario web → CRM
-- Página pública: `https://ventas-crm-two.vercel.app/formulario.html` (añade `?origen=linkedin`, `?origen=web`, etc. para saber de dónde viene cada interesado).
-- Para incrustarlo en otra web: `<iframe src="https://ventas-crm-two.vercel.app/formulario.html?embed=1&origen=web" style="width:100%;height:820px;border:0"></iframe>`
-- Cada envío crea centro (o reutiliza uno con el mismo nombre), contacto y oportunidad en **Detectado** con próximo paso «Responder en menos de 24 h». El CRM lo muestra en 2 minutos como máximo, con aviso.
-- Antispam: campo trampa, máximo 5 envíos por IP y hora, y 60 en total por hora. Se guarda registro en la tabla `leads_formulario`.
-- RGPD: casilla de consentimiento obligatoria; la fecha queda anotada en la oportunidad.
+## Formulario web → CRM (v2)
+Página: `https://ventas-crm-two.vercel.app/formulario.html?perfil=PERFIL&utm_campaign=CAMPAÑA`
+
+- **Perfiles:** `docente`, `colegio`, `red_grupo`, `universidad`, `editorial`, `plataforma`, `formacion_fp`, `formacion_empresa`. Cada uno muestra sus campos.
+- **Campañas:** `utm_campaign` (o `campana`) con los códigos de la tabla `campanas` (C1-colegios-andalucia … C7-fp). Se guardan también utm_source/medium/content/term, la landing, el referrer y el idioma.
+- **Opcionales:** `embed=1` (fondo transparente) y `privacidad=URL` (enlace a la política de privacidad).
+- **Qué hace:**
+  - Si el email no existe, crea centro, contacto y oportunidad en Detectado, con estado «Nuevo · landing» y próximo paso «Responder en 24 h laborables».
+  - Si el email ya existe, no duplica: añade la actividad «Nuevo formulario desde [landing]» a su ficha y rellena solo los campos vacíos.
+  - Los archivos (máx. 15 MB) se guardan en el bucket privado `lead-uploads`, con un enlace firmado en la ficha.
+- **Correos:** al visitante (texto según su perfil) y aviso a Rafa. Se activan al poner `RESEND_API_KEY` en Supabase → Edge Functions → Secrets. Opcionales: `NOTIFY_EMAIL`, `MAIL_FROM`, `EJEMPLO_MUNDO_URL`, `DOSSIER_SEGURIDAD_URL`.
+- **Incrustarlo en una landing (altura automática y aviso de envío):**
+
+```html
+<div id="eonesia-form"></div>
+<script>
+  (function () {
+    var perfil = 'colegio';                       // cambia según la landing
+    var f = document.createElement('iframe');
+    f.src = 'https://ventas-crm-two.vercel.app/formulario.html?embed=1&perfil=' + perfil +
+            (location.search ? '&' + location.search.slice(1) : '');   // pasa los utm_* de la landing
+    f.style.cssText = 'width:100%;border:0;height:900px';
+    f.title = 'Formulario Eonesia';
+    document.getElementById('eonesia-form').appendChild(f);
+    addEventListener('message', function (e) {
+      if (!e.data || e.origin !== 'https://ventas-crm-two.vercel.app') return;
+      if (e.data.tipo === 'eonesia-form-altura') f.style.height = e.data.altura + 'px';
+      if (e.data.tipo === 'eonesia-form-enviado') { /* p. ej. gtag('event', 'generate_lead') */ }
+    });
+  })();
+</script>
+```
+- **Antispam:** campo trampa, máximo 5 envíos por IP y hora, y 60 en total por hora. Los envíos quedan registrados en `leads_formulario`.
+- **Pendiente legal:** razón social y CIF de Eonesia, y la URL de la política de privacidad.
 
 ## Radar
 Ver `radar/LEEME.md`.

@@ -15,7 +15,8 @@ import {
   onEstadoSync,
   programarSync,
   salir,
-  traerNuevosDelFormulario,
+  traerCambiosRemotos,
+  jsonEstable,
 } from './sync';
 
 type Fase = 'comprobando' | 'login' | 'cargando' | 'migrar' | 'listo' | 'error';
@@ -86,12 +87,12 @@ export const NubeGate: React.FC<{ children: React.ReactNode }> = ({ children }) 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Interesados del formulario web: se comprueban cada 2 minutos y al volver a la pestaña
+  // Cambios en la nube (formulario web, otro dispositivo): cada 2 minutos y al volver a la pestaña
   useEffect(() => {
     if (fase !== 'listo' || !nubeConfigurada) return;
     const comprobar = async () => {
-      const nuevos = await traerNuevosDelFormulario(crmRepo.idsLocales());
-      if (nuevos) crmRepo.incorporarDeNube(nuevos);
+      const cambios = await traerCambiosRemotos();
+      if (cambios.length) crmRepo.aplicarCambiosRemotos(cambios, jsonEstable);
     };
     void comprobar();
     const t = setInterval(() => void comprobar(), 120000);

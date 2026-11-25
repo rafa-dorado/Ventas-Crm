@@ -19,6 +19,17 @@ export const supabase: SupabaseClient | null = nubeConfigurada ? createClient(UR
 type TipoItem = 'centro' | 'contacto' | 'oportunidad';
 export type EstadoSync = 'local' | 'sin_sesion' | 'sincronizado' | 'guardando' | 'pendiente' | 'error';
 
+/** JSON con claves ordenadas: jsonb de Postgres no conserva el orden, así se comparan bien. */
+export function jsonEstable(v: unknown): string {
+  if (Array.isArray(v)) return '[' + v.map(jsonEstable).join(',') + ']';
+  if (v && typeof v === 'object') {
+    return '{' + Object.keys(v as Record<string, unknown>).sort()
+      .filter((k) => (v as Record<string, unknown>)[k] !== undefined)
+      .map((k) => JSON.stringify(k) + ':' + jsonEstable((v as Record<string, unknown>)[k])).join(',') + '}';
+  }
+  return JSON.stringify(v ?? null);
+}
+
 const TAM_LOTE = 500;
 const TAM_PAGINA = 1000;
 const ESPERA_MS = 1500;
@@ -54,7 +65,7 @@ function mapaDeEstado(estado: EstadoCRM): Map<string, { tipo: TipoItem; id: stri
   const m = new Map<string, { tipo: TipoItem; id: string; json: string; data: unknown }>();
   const add = (tipo: TipoItem, lista: Array<{ id: string }>) => {
     for (const item of lista) {
-      const json = JSON.stringify(item);
+      const json = jsonEstable(item);
       m.set(`${tipo}:${item.id}`, { tipo, id: item.id, json, data: item });
     }
   };
@@ -245,21 +256,37 @@ export async function forzarSync(): Promise<void> {
   await enviar();
 }
 
-// --- Interesados del formulario web (los crea la función crear_lead_formulario) ---
-export async function traerNuevosDelFormulario(idsLocales: Set<string>): Promise<Partial<EstadoCRM> | null> {
-  if (!supabase || !sesion || !activo) return null;
+// --- Cambios hechos en la nube por otros (formulario web, otro dispositivo) ---
+export interface CambioRemoto { tipo: TipoItem; id: string; data: Record<string, unknown>; anterior?: string }
+let desdeRemoto = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+
+/**
+ * Devuelve las filas de la nube que han cambiado desde la última comprobación y que no
+ * son ya nuestra última versión enviada. `anterior` es la versión que conocíamos (si había).
+ */
+export async function traerCambiosRemotos(): Promise<CambioRemoto[]> {
+  if (!supabase || !sesion || !activo || enCurso) return [];
   const { data, error } = await supabase
     .from('crm_items')
-    .select('tipo,id,data')
-    .like('id', '%-form-%')
-    .order('id');
-  if (error || !data) return null;
-  const nuevos = data.filter((f: { tipo: TipoItem; id: string }) => !idsLocales.has(`${f.tipo}:${f.id}`));
-  if (!nuevos.length) return null;
-  const de = (t: TipoItem) => nuevos.filter((f: { tipo: TipoItem }) => f.tipo === t).map((f: { data: unknown }) => f.data);
-  // Ya están en la nube: se marcan como sincronizados para no reenviarlos
-  nuevos.forEach((f: { tipo: TipoItem; id: string; data: unknown }) => ultimo.set(`${f.tipo}:${f.id}`, JSON.stringify(f.data)));
-  return { centros: de('centro') as Centro[], contactos: de('contacto') as Contacto[], oportunidades: de('oportunidad') as Oportunidad[] };
+    .select('tipo,id,data,actualizado')
+    .gt('actualizado', desdeRemoto)
+    .order('actualizado')
+    .limit(1000);
+  if (error || !data) return [];
+  const cambios: CambioRemoto[] = [];
+  for (const f of data as Array<{ tipo: TipoItem; id: string; data: Record<string, unknown>; actualizado: string }>) {
+    const k = `${f.tipo}:${f.id}`;
+    const remoto = jsonEstable(f.data);
+    if (ultimo.get(k) === remoto) continue;
+    cambios.push({ tipo: f.tipo, id: f.id, data: f.data, anterior: ultimo.get(k) });
+    ultimo.set(k, remoto);
+  }
+  if (data.length) {
+    // margen de 2 min por si los relojes no coinciden; lo ya visto se descarta por contenido
+    const ult = (data[data.length - 1] as { actualizado: string }).actualizado;
+    desdeRemoto = new Date(new Date(ult).getTime() - 2 * 60 * 1000).toISOString();
+  }
+  return cambios;
 }
 
 // --- Señales del radar ---
