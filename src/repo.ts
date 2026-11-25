@@ -1737,33 +1737,69 @@ class CRMRepository {
     return s;
   }
 
-  /** Añade elementos llegados de la nube (formulario web) sin tocar lo existente. */
-  public incorporarDeNube(n: Partial<EstadoCRM>): number {
-    const tiene = this.idsLocales();
-    const c = (n.centros || []).filter((x) => !tiene.has(`centro:${x.id}`));
-    const ct = (n.contactos || []).filter((x) => !tiene.has(`contacto:${x.id}`));
-    const op = (n.oportunidades || []).filter((x) => !tiene.has(`oportunidad:${x.id}`));
-    if (!c.length && !ct.length && !op.length) return 0;
-    this.estado.centros.push(...c);
-    this.estado.contactos.push(...ct);
-    this.estado.oportunidades.push(...op);
+  /**
+   * Aplica cambios hechos en la nube por otros (formulario web, otro dispositivo).
+   * - Elemento nuevo: se añade.
+   * - Elemento que no has tocado desde la última sincronización: se sustituye por la versión de la nube.
+   * - Elemento que también has cambiado aquí: se conserva tu versión y se le suman las actividades nuevas de la nube.
+   * Devuelve los nombres de centros con interesados nuevos del formulario.
+   */
+  public aplicarCambiosRemotos(cambios: Array<{ tipo: 'centro' | 'contacto' | 'oportunidad'; id: string; data: Record<string, unknown>; anterior?: string }>, jsonEstable: (v: unknown) => string): void {
+    if (!cambios.length) return;
+    const lista = (t: string) =>
+      (t === 'centro' ? this.estado.centros : t === 'contacto' ? this.estado.contactos : this.estado.oportunidades) as unknown as Array<Record<string, unknown>>;
+    const nuevosForm: string[] = [];
+    let repitenForm = 0;
+    let fusionados = false;
+    for (const c of cambios) {
+      const arr = lista(c.tipo);
+      const i = arr.findIndex((x) => x.id === c.id);
+      if (i === -1) {
+        arr.push(c.data);
+        if (c.tipo === 'oportunidad' && String(c.id).startsWith('op-form-')) {
+          const centro = this.estado.centros.find((x) => x.id === c.data.centroId) || cambios.find((x) => x.tipo === 'centro' && x.id === c.data.centroId)?.data;
+          nuevosForm.push(String(centro?.nombre || 'Nuevo interesado'));
+        }
+        continue;
+      }
+      const local = arr[i];
+      if (c.anterior !== undefined && jsonEstable(local) !== c.anterior && c.tipo === 'oportunidad') {
+        // conflicto: tu versión manda, pero no se pierde ninguna actividad de la nube
+        const acts = (local.actividades as Array<Record<string, unknown>>) || [];
+        const ids = new Set(acts.map((a) => a.id).filter(Boolean));
+        const nuevas = ((c.data.actividades as Array<Record<string, unknown>>) || []).filter((a) => a.id && !ids.has(a.id));
+        if (nuevas.length) {
+          local.actividades = [...nuevas, ...acts];
+          fusionados = true;
+          if (nuevas.some((a) => a.autor === 'Formulario web')) repitenForm++;
+        }
+      } else {
+        const antes = ((local.actividades as unknown[]) || []).length;
+        arr[i] = c.data;
+        if (c.tipo === 'oportunidad' && ((c.data.actividades as unknown[]) || []).length > antes &&
+            ((c.data.actividades as Array<Record<string, unknown>>) || [])[0]?.autor === 'Formulario web') repitenForm++;
+      }
+    }
+    // Lo que llegó de la nube no se reenvía; lo fusionado sí (para que la nube tenga ambas partes)
     const sinc = this.sincronizador;
-    this.sincronizador = null; // ya están en la nube
+    if (!fusionados) this.sincronizador = null;
     this.guardar();
     this.sincronizador = sinc;
     this.notificarCambio();
-    if (op.length) {
-      const nombres = op
-        .map((o) => this.estado.centros.find((x) => x.id === o.centroId)?.nombre)
-        .filter(Boolean)
-        .join(', ');
+    if (nuevosForm.length) {
       this.emitirNotificacion({
         tipo: 'exito',
-        titulo: op.length === 1 ? 'Nuevo interesado desde el formulario' : `${op.length} nuevos interesados desde el formulario`,
-        descripcion: `${nombres}. Está en el Tablero, en Detectado.`,
+        titulo: nuevosForm.length === 1 ? 'Nuevo interesado desde el formulario' : `${nuevosForm.length} nuevos interesados desde el formulario`,
+        descripcion: `${nuevosForm.join(', ')}. Está en el Tablero, en Detectado.`,
       });
     }
-    return op.length;
+    if (repitenForm) {
+      this.emitirNotificacion({
+        tipo: 'info',
+        titulo: 'Un contacto ha vuelto a escribir',
+        descripcion: 'Se ha añadido la actividad a su ficha.',
+      });
+    }
   }
 
   // =========================================================================

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eonesia · Solicita información</title>
-<meta name="description" content="Cuéntanos qué necesitas y te respondemos en menos de 24 horas.">
+<meta name="description" content="Cuéntanos qué necesitas y te respondemos en menos de 24 horas laborables.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -12,7 +12,8 @@
   * { box-sizing:border-box; }
   html,body { margin:0; background:var(--bg); color:var(--texto); font-family:Inter,system-ui,sans-serif; }
   body.embed { background:transparent; }
-  main { max-width:560px; margin:0 auto; padding:32px 18px 40px; }
+  main { max-width:580px; margin:0 auto; padding:28px 16px 36px; }
+  body.embed main { padding:0; }
   .tarjeta { background:var(--panel); border:1px solid rgba(0,200,255,.22); border-radius:18px; padding:28px 24px; position:relative; overflow:hidden; }
   .tarjeta::before { content:""; position:absolute; inset:0 0 auto 0; height:3px; background:linear-gradient(90deg,var(--cian),var(--rosa) 52%,var(--violeta)); }
   .marca { font-weight:700; letter-spacing:.14em; font-size:12px; color:var(--cian); text-transform:uppercase; }
@@ -23,13 +24,16 @@
   label { display:block; font-size:12px; font-weight:600; color:var(--suave); margin:0 0 6px; }
   .campo { margin-bottom:14px; }
   input, select, textarea { width:100%; background:var(--campo); color:var(--texto); border:1px solid var(--borde); border-radius:10px; padding:11px 12px; font:inherit; font-size:14px; }
-  textarea { min-height:96px; resize:vertical; }
+  input[type=file] { padding:9px; }
+  textarea { min-height:90px; resize:vertical; }
   input:focus, select:focus, textarea:focus { outline:none; border-color:var(--cian); box-shadow:0 0 0 3px rgba(0,200,255,.15); }
   .req { color:var(--rosa); }
+  .nota { font-size:11px; color:var(--suave); margin-top:6px; line-height:1.4; }
+  .aviso { font-size:12px; color:#ffd9a0; background:rgba(255,170,0,.08); border:1px solid rgba(255,170,0,.3); border-radius:10px; padding:9px 11px; margin-bottom:14px; line-height:1.45; }
   .trampa { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
-  .consent { display:flex; gap:10px; align-items:flex-start; font-size:12px; color:var(--suave); line-height:1.5; margin:4px 0 18px; }
-  .consent input { width:auto; margin-top:3px; accent-color:var(--cian); }
-  button { width:100%; border:0; border-radius:10px; padding:13px; font:inherit; font-weight:700; font-size:15px; background:var(--cian); color:#0D0D14; cursor:pointer; }
+  .check { display:flex; gap:10px; align-items:flex-start; font-size:12px; color:var(--suave); line-height:1.5; margin:4px 0 10px; }
+  .check input { width:auto; margin-top:3px; accent-color:var(--cian); }
+  button { width:100%; border:0; border-radius:10px; padding:13px; font:inherit; font-weight:700; font-size:15px; background:var(--cian); color:#0D0D14; cursor:pointer; margin-top:8px; }
   button:disabled { opacity:.5; cursor:wait; }
   .msg { margin-top:14px; font-size:13px; line-height:1.5; }
   .error { color:var(--rosa); }
@@ -37,7 +41,7 @@
   .ok h2 { font-size:22px; margin:6px 0; }
   .ok p { color:var(--suave); font-size:14px; line-height:1.6; }
   .legal { font-size:11px; color:#7c7c92; margin-top:16px; line-height:1.5; }
-  .legal a, .consent a { color:var(--cian); }
+  a { color:var(--cian); }
 </style>
 </head>
 <body>
@@ -45,96 +49,171 @@
   <div class="tarjeta">
     <form id="f" novalidate>
       <div class="marca">Eonesia</div>
-      <h1>Hablemos de tu proyecto inmersivo</h1>
-      <p class="sub">Cuéntanos qué necesitas. Te respondemos en menos de 24 horas laborables.</p>
+      <h1 id="titulo">Hablemos de tu proyecto inmersivo</h1>
+      <p class="sub" id="subtitulo">Cuéntanos qué necesitas. Te respondemos en menos de 24 horas laborables.</p>
 
       <div class="fila">
         <div class="campo"><label for="nombre">Nombre y apellidos <span class="req">*</span></label><input id="nombre" name="nombre" required maxlength="120" autocomplete="name"></div>
-        <div class="campo"><label for="cargo">Cargo</label><input id="cargo" name="cargo" maxlength="120" placeholder="Dirección, coordinación TDE…" autocomplete="organization-title"></div>
+        <div class="campo" id="campo-cargo"><label for="cargo">Cargo</label><input id="cargo" name="cargo" maxlength="120" autocomplete="organization-title"></div>
       </div>
       <div class="fila">
         <div class="campo"><label for="email">Email <span class="req">*</span></label><input id="email" name="email" type="email" required maxlength="160" autocomplete="email"></div>
         <div class="campo"><label for="telefono">Teléfono</label><input id="telefono" name="telefono" type="tel" maxlength="40" autocomplete="tel"></div>
       </div>
-      <div class="campo"><label for="organizacion">Centro u organización <span class="req">*</span></label><input id="organizacion" name="organizacion" required maxlength="160" autocomplete="organization"></div>
       <div class="fila">
-        <div class="campo"><label for="tipo">Tipo</label>
-          <select id="tipo" name="tipo">
-            <option value="Concertado">Colegio concertado</option>
-            <option value="Privado">Colegio privado</option>
-            <option value="Publico">Colegio o instituto público</option>
-            <option value="FP">Centro de FP</option>
-            <option value="Universidad">Universidad</option>
-            <option value="Editorial">Editorial o plataforma educativa</option>
-            <option value="Institucional">Empresa o institución</option>
-          </select>
-        </div>
-        <div class="campo"><label for="provincia">Provincia</label><input id="provincia" name="provincia" maxlength="60" autocomplete="address-level1"></div>
+        <div class="campo"><label for="organizacion" id="label-org">Centro u organización <span class="req">*</span></label><input id="organizacion" name="organizacion" required maxlength="160" autocomplete="organization"></div>
+        <div class="campo"><label for="localidad" id="label-loc">Localidad</label><input id="localidad" name="localidad" maxlength="80" autocomplete="address-level2"></div>
       </div>
-      <div class="campo"><label for="mensaje">¿Qué te gustaría conseguir?</label><textarea id="mensaje" name="mensaje" maxlength="2000" placeholder="Por ejemplo: una demo para el claustro, un piloto en 3º de ESO…"></textarea></div>
+
+      <div id="especificos"></div>
+
+      <div class="campo"><label for="mensaje">¿Algo más que debamos saber?</label><textarea id="mensaje" name="mensaje" maxlength="2000"></textarea></div>
 
       <div class="trampa" aria-hidden="true"><label for="web_trampa">No rellenar</label><input id="web_trampa" name="web_trampa" tabindex="-1" autocomplete="off"></div>
 
-      <label class="consent"><input type="checkbox" id="consentimiento" name="consentimiento" required>
-        <span>Acepto que Eonesia trate mis datos para responder a esta solicitud y enviarme información relacionada. <span class="req">*</span></span>
-      </label>
+      <label class="check"><input type="checkbox" id="consentimiento">
+        <span>He leído la información sobre protección de datos y acepto que Eonesia trate mis datos para responder a esta solicitud. <span class="req">*</span></span></label>
+      <label class="check"><input type="checkbox" id="acepta_comunicaciones">
+        <span>Quiero recibir novedades de Eonesia (opcional).</span></label>
 
       <button id="enviar" type="submit">Enviar solicitud</button>
       <div id="msg" class="msg" role="status" aria-live="polite"></div>
 
-      <p class="legal">Responsable: Eonesia. Finalidad: atender tu solicitud y mantener el contacto comercial relacionado. Legitimación: tu consentimiento. Tus datos no se ceden a terceros. Puedes ejercer tus derechos de acceso, rectificación, supresión y oposición escribiendo a <a href="mailto:rafa.dorado@eonesia.com">rafa.dorado@eonesia.com</a>.</p>
+      <p class="legal">Responsable: Eonesia. Finalidad: responder a tu solicitud y, solo si marcas la casilla, enviarte novedades. Legitimación: tu consentimiento. No cedemos tus datos a terceros. Puedes ejercer tus derechos de acceso, rectificación, supresión, oposición, limitación y portabilidad en <a href="mailto:rafa.dorado@eonesia.com">rafa.dorado@eonesia.com</a>.<span id="enlace-privacidad"></span></p>
     </form>
 
     <div id="gracias" class="ok" hidden>
       <div class="marca">Eonesia</div>
       <h2>¡Gracias! Lo hemos recibido</h2>
-      <p>Te escribiremos en menos de 24 horas laborables. Si es urgente, llámanos al <a href="tel:+34661266232" style="color:var(--cian)">661 26 62 32</a>.</p>
+      <p id="gracias-texto">Te escribiremos en menos de 24 horas laborables.</p>
+      <p>Si prefieres hablar ya, <a id="calendly" target="_blank" rel="noopener">reserva aquí una llamada</a>.</p>
     </div>
   </div>
 </main>
 <script>
-  const SUPABASE_URL = 'https://wzmysfnvyzqgdqhvuxzm.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_Lp_mN-TRhVZ4o2_ZT40nwQ_QcDN0EhD'; // pública por diseño: solo permite llamar a la función del formulario
-  const params = new URLSearchParams(location.search);
-  if (params.get('embed') === '1') document.body.classList.add('embed');
-  const origen = (params.get('origen') || params.get('utm_source') || (document.referrer ? new URL(document.referrer).hostname : 'directo')).slice(0, 60);
+  const ENDPOINT = 'https://wzmysfnvyzqgdqhvuxzm.supabase.co/functions/v1/lead-intake';
+  const CALENDLY = 'https://calendly.com/rafa-dorado-x_a/tranformar-la-educacion';
+  const q = new URLSearchParams(location.search);
+  const PERFILES = ['docente','colegio','red_grupo','editorial','plataforma','universidad','formacion_fp','formacion_empresa'];
+  const perfil = PERFILES.includes(q.get('perfil')) ? q.get('perfil') : 'colegio';
+  if (q.get('embed') === '1') document.body.classList.add('embed');
+  if (q.get('privacidad')) document.getElementById('enlace-privacidad').innerHTML = ` <a target="_blank" rel="noopener" href="${encodeURI(q.get('privacidad'))}">Política de privacidad</a>.`;
 
-  const f = document.getElementById('f');
-  const msg = document.getElementById('msg');
-  const btn = document.getElementById('enviar');
+  // Campos por perfil: [nombre, etiqueta, tipo, opciones|placeholder]
+  const ARCHIVO = ['archivo', 'Unidad o PDF (opcional, máx. 15 MB)', 'file'];
+  const DEF = {
+    docente: { titulo: 'Pide tu mundo inmersivo gratis', sub: 'Dinos el tema y en 24 horas laborables te enviamos el mundo con su ficha y la guía de soluciones.',
+      org: 'Centro educativo', cargoOculto: true,
+      campos: [['etapa','Etapa','select',['Primaria','ESO','Bachillerato']], ['curso','Curso','text','Ej.: 2º ESO'],
+               ['asignatura','Asignatura','text'], ['tema','Tema del mundo','text','Ej.: los volcanes'],
+               ['titularidad','Titularidad del centro','select',['Pública','Concertada','Privada']], ARCHIVO],
+      aviso: 'No subas documentos con datos personales del alumnado (nombres, fotos, notas).' },
+    colegio: { titulo: 'Vuestro primer mundo, gratis', sub: 'Elegimos juntos una unidad y la convertimos en un mundo navegable para vuestras clases.',
+      org: 'Colegio',
+      campos: [['cargo','Cargo','select',['Dirección','Jefatura de estudios','Coordinación TIC o innovación','Docente','Otro']],
+               ['titularidad','Titularidad','select',['Concertada','Privada','Pública']],
+               ['etapas','Etapas','select',['Primaria','ESO','Primaria y ESO']], ['num_docentes','Nº de docentes (aprox.)','number'],
+               ARCHIVO, ['envio_por_correo','Prefiero enviaros la unidad por correo','checkbox']],
+      aviso: 'No subas documentos con datos personales del alumnado.' },
+    red_grupo: { titulo: 'Piloto en 2 colegios de vuestra red', sub: 'Medimos el impacto en dos centros antes de extenderlo al grupo.', org: 'Red o grupo educativo',
+      campos: [['tipo','Tipo','select',['Red concertada','Grupo español','Grupo internacional']], ['num_colegios','Nº de colegios','number'],
+               ['curriculos','Currículos','select',['LOMLOE','Británico','IB','Otro']],
+               ['plataforma_actual','Plataforma actual','select',['Moodle','Classroom','Teams','Canvas','Otra']]] },
+    universidad: { titulo: 'Convertimos un tema de tu asignatura en directo', sub: 'Trae un tema y en 30 minutos lo ves convertido en un espacio inmersivo.', org: 'Universidad', locPais: true,
+      campos: [['facultad','Facultad o área','text'], ['asignatura','Asignatura','text'], ['num_alumnos','Nº de alumnos','number']] },
+    editorial: { titulo: 'Demo con un tema de vuestro catálogo', sub: '20 minutos para ver un tema vuestro convertido en mundo navegable.', org: 'Editorial',
+      campos: [['tipo','Tipo','select',['Editorial','Plataforma','Otro']], ['etapas','Etapas','text','Ej.: Primaria, ESO, FP'],
+               ['interes','Interés','select',['Piloto','Catálogo','Integración','Reparto de ingresos']]] },
+    formacion_fp: { titulo: 'Sesión gratuita para tu grupo de FP', sub: 'Probamos un mundo con tu grupo, sin coste.', org: 'Centro de FP',
+      campos: [['familia','Familia profesional','text'], ['ciclo','Ciclo','text'], ['num_grupos','Nº de grupos','number'],
+               ['titularidad','Centro','select',['Público','Privado','Concertado']]] },
+    formacion_empresa: { titulo: 'Formación inmersiva para tu empresa', sub: 'Cuéntanos qué quieres formar y te proponemos un piloto.', org: 'Empresa', campos: [] },
+  };
+  DEF.plataforma = { ...DEF.editorial, org: 'Plataforma' };
+  const d = DEF[perfil];
 
-  function avisarAltura() {
-    try { parent.postMessage({ eonesiaFormAltura: document.documentElement.scrollHeight }, '*'); } catch (e) {}
+  document.getElementById('titulo').textContent = d.titulo;
+  document.getElementById('subtitulo').textContent = d.sub;
+  document.getElementById('label-org').innerHTML = `${d.org} <span class="req">*</span>`;
+  if (d.locPais) document.getElementById('label-loc').textContent = 'País';
+  if (d.cargoOculto || d.campos.some((c) => c[0] === 'cargo')) document.getElementById('campo-cargo').style.visibility = 'hidden';
+
+  const cont = document.getElementById('especificos');
+  if (d.aviso) cont.insertAdjacentHTML('beforeend', `<div class="aviso">${d.aviso}</div>`);
+  let html = '';
+  const pares = d.campos.filter((c) => c[2] !== 'file' && c[2] !== 'checkbox');
+  for (let i = 0; i < pares.length; i += 2) {
+    html += '<div class="fila">' + pares.slice(i, i + 2).map(campoHTML).join('') + '</div>';
   }
-  addEventListener('load', avisarAltura);
+  d.campos.filter((c) => c[2] === 'file').forEach((c) => {
+    html += `<div class="campo"><label for="${c[0]}">${c[1]}</label><input type="file" id="${c[0]}" accept=".pdf,.docx,.pptx,.jpg,.jpeg,.png"><div class="nota">PDF, DOCX, PPTX, JPG o PNG.</div></div>`;
+  });
+  d.campos.filter((c) => c[2] === 'checkbox').forEach((c) => {
+    html += `<label class="check"><input type="checkbox" id="${c[0]}" data-perfil="1"><span>${c[1]}</span></label>`;
+  });
+  cont.insertAdjacentHTML('beforeend', html);
+  function campoHTML(c) {
+    const [id, et, tipo, extra] = c;
+    if (tipo === 'select') return `<div class="campo"><label for="${id}">${et}</label><select id="${id}" data-perfil="1"><option value="">Elige…</option>${extra.map((o) => `<option>${o}</option>`).join('')}</select></div>`;
+    return `<div class="campo"><label for="${id}">${et}</label><input id="${id}" data-perfil="1" type="${tipo}" ${tipo === 'number' ? 'min="0"' : 'maxlength="120"'} placeholder="${extra || ''}"></div>`;
+  }
 
+  // Ocultos: landing, campaña, UTM, referrer, idioma
+  const utm = {};
+  ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach((k) => { if (q.get(k)) utm[k] = q.get(k).slice(0, 100); });
+  let landing = location.href;
+  try { if (document.referrer && window.top !== window) landing = document.referrer; } catch (e) {}
+  const campana = (q.get('campana') || utm.utm_campaign || '').slice(0, 80);
+  document.getElementById('calendly').href = CALENDLY + (campana ? `?utm_campaign=${encodeURIComponent(campana)}` : '');
+
+  // Avisos a la página que incrusta el formulario
+  function avisar(m) { try { parent.postMessage(m, '*'); } catch (e) {} }
+  const ro = new ResizeObserver(() => avisar({ tipo: 'eonesia-form-altura', altura: document.documentElement.scrollHeight }));
+  ro.observe(document.body);
+
+  const f = document.getElementById('f'), msg = document.getElementById('msg'), btn = document.getElementById('enviar');
   f.addEventListener('submit', async (ev) => {
     ev.preventDefault();
     msg.textContent = ''; msg.className = 'msg';
-    const d = Object.fromEntries(new FormData(f).entries());
-    if (!d.nombre?.trim() || !d.organizacion?.trim()) return error('Rellena tu nombre y tu centro u organización.');
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((d.email || '').trim())) return error('Revisa el email.');
+    const v = (id) => (document.getElementById(id)?.value || '').trim();
+    if (!v('nombre') || !v('organizacion')) return error('Rellena tu nombre y la organización.');
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v('email'))) return error('Revisa el email.');
     if (!document.getElementById('consentimiento').checked) return error('Necesitamos tu consentimiento para poder responderte.');
-    btn.disabled = true; btn.textContent = 'Enviando…';
+    const archivoEl = document.getElementById('archivo');
+    const archivo = archivoEl?.files?.[0];
+    if (archivo && archivo.size > 15 * 1024 * 1024) return error('El archivo supera 15 MB.');
+
+    const datos_perfil = {};
+    document.querySelectorAll('[data-perfil]').forEach((el) => {
+      const val = el.type === 'checkbox' ? (el.checked ? 'sí' : '') : el.value.trim();
+      if (val && el.id !== 'cargo') datos_perfil[el.id] = val;
+    });
+    const p = {
+      nombre: v('nombre'), email: v('email'), telefono: v('telefono'), organizacion: v('organizacion'),
+      cargo: v('cargo'), mensaje: v('mensaje'), web_trampa: v('web_trampa'),
+      [d.locPais ? 'pais' : 'localidad']: v('localidad'),
+      consentimiento: true, acepta_comunicaciones: document.getElementById('acepta_comunicaciones').checked,
+      perfil, campana, utm, landing, referrer: document.referrer || '', idioma: navigator.language || 'es',
+      fecha_envio: new Date().toISOString(), datos_perfil,
+    };
+    const fd = new FormData();
+    fd.append('datos', JSON.stringify(p));
+    if (archivo) fd.append('archivo', archivo);
+
+    btn.disabled = true; btn.textContent = archivo ? 'Subiendo…' : 'Enviando…';
     try {
-      const r = await fetch(SUPABASE_URL + '/rest/v1/rpc/crear_lead_formulario', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY, Authorization: 'Bearer ' + SUPABASE_KEY },
-        body: JSON.stringify({ p: { ...d, consentimiento: true, origen } }),
-      });
-      if (!r.ok) {
-        const j = await r.json().catch(() => ({}));
-        throw new Error(j.message || 'No se pudo enviar');
-      }
+      const r = await fetch(ENDPOINT, { method: 'POST', body: fd });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'No se pudo enviar');
       f.hidden = true;
       document.getElementById('gracias').hidden = false;
-      avisarAltura();
+      avisar({ tipo: 'eonesia-form-enviado', perfil, campana });
     } catch (e) {
       error((e && e.message ? e.message + '. ' : '') + 'Si persiste, escríbenos a rafa.dorado@eonesia.com.');
       btn.disabled = false; btn.textContent = 'Enviar solicitud';
     }
   });
-  function error(t) { msg.textContent = t; msg.className = 'msg error'; avisarAltura(); }
+  function error(t) { msg.textContent = t; msg.className = 'msg error'; }
 </script>
 </body>
 </html>
