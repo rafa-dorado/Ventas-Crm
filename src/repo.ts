@@ -1728,6 +1728,44 @@ class CRMRepository {
     return this.obtenerEstado();
   }
 
+  /** Ids locales con el mismo formato que la sincronización (`tipo:id`). */
+  public idsLocales(): Set<string> {
+    const s = new Set<string>();
+    this.estado.centros.forEach((c) => s.add(`centro:${c.id}`));
+    this.estado.contactos.forEach((c) => s.add(`contacto:${c.id}`));
+    this.estado.oportunidades.forEach((o) => s.add(`oportunidad:${o.id}`));
+    return s;
+  }
+
+  /** Añade elementos llegados de la nube (formulario web) sin tocar lo existente. */
+  public incorporarDeNube(n: Partial<EstadoCRM>): number {
+    const tiene = this.idsLocales();
+    const c = (n.centros || []).filter((x) => !tiene.has(`centro:${x.id}`));
+    const ct = (n.contactos || []).filter((x) => !tiene.has(`contacto:${x.id}`));
+    const op = (n.oportunidades || []).filter((x) => !tiene.has(`oportunidad:${x.id}`));
+    if (!c.length && !ct.length && !op.length) return 0;
+    this.estado.centros.push(...c);
+    this.estado.contactos.push(...ct);
+    this.estado.oportunidades.push(...op);
+    const sinc = this.sincronizador;
+    this.sincronizador = null; // ya están en la nube
+    this.guardar();
+    this.sincronizador = sinc;
+    this.notificarCambio();
+    if (op.length) {
+      const nombres = op
+        .map((o) => this.estado.centros.find((x) => x.id === o.centroId)?.nombre)
+        .filter(Boolean)
+        .join(', ');
+      this.emitirNotificacion({
+        tipo: 'exito',
+        titulo: op.length === 1 ? 'Nuevo interesado desde el formulario' : `${op.length} nuevos interesados desde el formulario`,
+        descripcion: `${nombres}. Está en el Tablero, en Detectado.`,
+      });
+    }
+    return op.length;
+  }
+
   // =========================================================================
   // GTM: TAM, cuentas y señales
   // =========================================================================

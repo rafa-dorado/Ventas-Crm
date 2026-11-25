@@ -7,7 +7,7 @@ export type TipoCentro =
   | 'Editorial' 
   | 'Institucional';
 
-export type OrigenCentro = 'manual' | 'prospeccion' | 'csv' | 'json';
+export type OrigenCentro = 'manual' | 'prospeccion' | 'csv' | 'json' | 'formulario';
 
 export interface Centro {
   id: string;
@@ -58,6 +58,7 @@ export interface Contacto {
   nombre: string;
   cargo: string;
   email: string;
+  telefono?: string;
   rol: RolContacto;
 }
 
