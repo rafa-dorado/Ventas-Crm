@@ -11,7 +11,7 @@ Variables de entorno:
   GEMINI_API_KEY (opcional)                     -> resume cada señal y propone una primera frase
 Solo se envía a la IA texto público de los blogs, nunca datos personales.
 """
-import sys, os, json, re, unicodedata, pathlib, urllib.request, datetime as dt
+import sys, os, json, re, socket, unicodedata, pathlib, urllib.request, datetime as dt
 import feedparser, pandas as pd
 
 PALABRAS = ["paisaje de aprendizaje", "paisajes de aprendizaje", "steam", "gamificacion",
@@ -27,6 +27,7 @@ INSTRUCCIONES = (
     "Devuelve SOLO un JSON con: relevante (true/false), tema (texto corto), resumen (2 líneas), "
     "primera_frase (frase de contacto para la coordinación TDE basada SOLO en el texto; vacía si no es relevante), "
     "evidencia (cita literal breve). No inventes datos ni nombres.")
+socket.setdefaulttimeout(20)  # ninguna web puede bloquear el radar más de 20 s
 UA = {"User-Agent": "Mozilla/5.0 (radar Eonesia; +https://eonesia.com)"}
 
 
@@ -43,7 +44,14 @@ def feeds_de(celda):
 
 
 def leer(url):
-    return feedparser.parse(url, request_headers=UA, agent=UA["User-Agent"])
+    """Descarga con tiempo límite y luego analiza; si falla, devuelve un feed vacío."""
+    try:
+        req = urllib.request.Request(url, headers=UA)
+        with urllib.request.urlopen(req, timeout=20) as r:
+            return feedparser.parse(r.read())
+    except Exception as e:
+        print(f"Aviso: {url} -> {str(e)[:80]}", flush=True)
+        return feedparser.parse(b"")
 
 
 def comprobar(centros):
@@ -55,7 +63,7 @@ def comprobar(centros):
             fechas = [e.get("published_parsed") or e.get("updated_parsed") for e in f.entries]
             fechas = [dt.date(*x[:3]).isoformat() for x in fechas if x]
             titulo = (f.feed.get("title") or "").replace("|", "/")[:60]
-            print(f"| {c.nombre} ({c.codigo_centro}) | {url} | {'OK' if ok else 'NO'} | {len(f.entries)} | {max(fechas) if fechas else '-'} | {titulo} |")
+            print(flush=True, *[f"| {c.nombre} ({c.codigo_centro}) | {url} | {'OK' if ok else 'NO'} | {len(f.entries)} | {max(fechas) if fechas else '-'} | {titulo} |"])
 
 
 def detectar(centros, vistos):

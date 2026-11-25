@@ -30,9 +30,9 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           if [ "${{ inputs.modo }}" = "comprobar" ]; then
-            python radar/radar.py radar/centros.csv --comprobar | tee -a "$GITHUB_STEP_SUMMARY"
+            python -u radar/radar.py radar/centros.csv --comprobar | tee -a "$GITHUB_STEP_SUMMARY"
           else
-            python radar/radar.py radar/centros.csv | tee -a "$GITHUB_STEP_SUMMARY"
+            python -u radar/radar.py radar/centros.csv | tee -a "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/upload-artifact@v4
         if: always()
