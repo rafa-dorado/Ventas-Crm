@@ -136,7 +136,7 @@
   document.getElementById('subtitulo').textContent = d.sub;
   document.getElementById('label-org').innerHTML = `${d.org} <span class="req">*</span>`;
   if (d.locPais) document.getElementById('label-loc').textContent = 'País';
-  if (d.cargoOculto || d.campos.some((c) => c[0] === 'cargo')) document.getElementById('campo-cargo').style.visibility = 'hidden';
+  if (d.cargoOculto || d.campos.some((c) => c[0] === 'cargo')) document.getElementById('campo-cargo').remove(); // evita dos campos «cargo»
 
   const cont = document.getElementById('especificos');
   if (d.aviso) cont.insertAdjacentHTML('beforeend', `<div class="aviso">${d.aviso}</div>`);
